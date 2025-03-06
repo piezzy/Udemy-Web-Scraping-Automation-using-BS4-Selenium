@@ -15,14 +15,59 @@ REQUEST_HEADERS = {
 def get_page_html(url):
     res = requests.get(url=url,headers=REQUEST_HEADERS)
     return res.content
+
+def get_product_price(soup):
+    main_price_span = soup.find('span', attrs={
+        "class": "a-price aok-align-center reinventPricePriceToPayMargin priceToPay"
+    })
+    price_span = main_price_span.find_all('span')
+    for span in price_span:
+        price = span.text.strip().replace('$', '').replace(',', '')
+        try:
+            return float(price)
+        except ValueError:
+            print("cannot be parsed")
+            
+def get_product_title(soup):
+    prouduct_title = soup.find('span', id="productTitle")
+    return prouduct_title.text.strip()
+
+def get_product_rating(soup):
+    product_rating = soup.find('span', attrs={"id": "averageCustomerReviews"})
+    if not product_rating:
+        print("Product rating not found")
+        return None
     
+    product_rating_section = product_rating.find('i', class_="a-icon-star")
+    if not product_rating_section:
+        print("Rating section not found")
+        return None
+    
+    product_rating_span = product_rating_section.find('span')
+    if not product_rating_span:
+        print("Rating span not found")
+        return None
+
+    try:
+        rating = product_rating_span.text.strip().split()
+        return float(rating[0]) 
+    except ValueError:
+        print("Rating cannot be parsed")
+        return None
+
+                                                                
+                                                                 
 def extract_product_info(url):
     product_info = {}
     print("Extracting product info from: ", url)
     html = get_page_html(url)
     soup = bs4.BeautifulSoup(html, 'lxml')
-    product_info['price'] = get_page_html(url)
-
+    product_info['price'] = get_product_price(soup)
+    product_info['title'] = get_product_title(soup)
+    product_info['rating'] = get_product_rating(soup)
+    print(product_info)
+    
+    
 if __name__ == "__main__":
     with open(filepath, newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
