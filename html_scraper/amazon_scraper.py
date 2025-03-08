@@ -3,6 +3,8 @@ import requests
 import csv
 import bs4
 import os
+import concurrent.futures
+from tqdm import tqdm
 
 filepath = os.path.abspath("amazon_products_urls.csv")
 
@@ -11,6 +13,7 @@ REQUEST_HEADERS = {
     'User-Agent': USER_AGENT,
     'Accept-Language': 'en-US,en;q=0.5',
 }
+NO_THREADS = 10
 
 def get_page_html(url):
     res = requests.get(url=url,headers=REQUEST_HEADERS)
@@ -69,9 +72,9 @@ def get_product_details(soup):
     return details
                                                                 
                                                                  
-def extract_product_info(url):
+def extract_product_info(url, output):
     product_info = {}
-    print("Extracting product info from: ", url)
+    # print("Extracting product info from: ", url)
     html = get_page_html(url)
     soup = bs4.BeautifulSoup(html, 'lxml')
     product_info['price'] = get_product_price(soup)
@@ -79,11 +82,20 @@ def extract_product_info(url):
     product_info['rating'] = get_product_rating(soup)
     product_info.update(get_product_details(soup))
     print(product_info)
-    
+    output.append(product_info)
     
 if __name__ == "__main__":
+    product_data = []
+    urls = []
     with open(filepath, newline='') as csvfile:
-        reader = csv.reader(csvfile, delimiter=',')
-        for row in reader:
-            url = row[0]
-            extract_product_info(url)
+        urls = list(csv.reader(csvfile, delimiter=','))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=NO_THREADS) as Executor:
+        futures = [Executor.submit(extract_product_info, urls[wkn][0], product_data) for wkn in tqdm(range(0, len(urls)))]
+        concurrent.futures.wait(futures)
+                   
+    output_file_name = 'output-{}.csv'.format(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    with open(output_file_name, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(product_data[0].keys())
+        for product in product_data:
+            writer.writerow(product.values())
