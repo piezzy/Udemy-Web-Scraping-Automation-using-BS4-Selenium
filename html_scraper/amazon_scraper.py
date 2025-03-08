@@ -50,11 +50,23 @@ def get_product_rating(soup):
 
     try:
         rating = product_rating_span.text.strip().split()
+        print(rating)
         return float(rating[0]) 
     except ValueError:
         print("Rating cannot be parsed")
         return None
 
+def get_product_details(soup):
+    details = {}
+    details_section = soup.find('div', id="prodDetails")
+    data_table = details_section.find_all('table', class_='prodDetTable')
+    for table in data_table:
+        table_rows = table.find_all('tr')
+        for row in table_rows:
+            key = row.find('th').text.strip()
+            value = row.find('td').text.strip().replace('\u200e', '')
+            details[key] = value
+    return details
                                                                 
                                                                  
 def extract_product_info(url):
@@ -65,6 +77,7 @@ def extract_product_info(url):
     product_info['price'] = get_product_price(soup)
     product_info['title'] = get_product_title(soup)
     product_info['rating'] = get_product_rating(soup)
+    product_info.update(get_product_details(soup))
     print(product_info)
     
     
@@ -73,4 +86,4 @@ if __name__ == "__main__":
         reader = csv.reader(csvfile, delimiter=',')
         for row in reader:
             url = row[0]
-            print(extract_product_info(url))
+            extract_product_info(url)
