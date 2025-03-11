@@ -20,8 +20,21 @@ def login():
     with open ("config.json", "r") as f:
         credentials = json.load(f)
         time.sleep(2)
+        
         DRIVER.find_element(By.XPATH, value="//a[contains(@href, 'id.atlassian.com/login')]").click()
-        print(credentials) # dbgging
+        time.sleep(2)
+        
+        username = DRIVER.find_element(By.CSS_SELECTOR, value="input[id='username']")
+        username.send_keys(credentials["USERNAME"])
+
+        DRIVER.find_element(By.CLASS_NAME, "css-178ag6o").click()
+        time.sleep(2)
+        
+        password = DRIVER.find_element(By.CSS_SELECTOR, value="input[id='password']")
+        password.send_keys(credentials["PASSWORD"])
+
+        DRIVER.find_element(By.CLASS_NAME, "css-178ag6o").click()
+        time.sleep(2)
         
 def main():
     try:
